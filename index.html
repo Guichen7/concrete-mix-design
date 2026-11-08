@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>普通混凝土配合比设计系统 · JGJ55-2011</title>
+<meta name="description" content="依据 JGJ55-2011 规范的普通混凝土配合比设计工具：配合比计算、级配曲线、成本碳排放对比、参数可行域、敏感性分析与蒙特卡洛风险分析。">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 3h6v4l3.5 12.5A2 2 0 0 1 16.6 22H7.4a2 2 0 0 1-1.9-2.5L9 7V3z"/>
+          <path d="M8 13h8"/><path d="M7 3h10"/>
+        </svg>
+      </div>
+      <div>
+        <h1>普通混凝土配合比设计系统</h1>
+        <p class="sub">依据 JGJ55-2011 规程 · 一体化输入 · 全结果实时输出</p>
+      </div>
+    </div>
+    <nav class="topnav">
+      <a href="#result">配合比</a>
+      <a href="#grade">级配</a>
+      <a href="#feasible">可行域</a>
+      <a href="#risk">风险</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap layout">
+  <!-- ============ 侧边栏：输入 ============ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="panel">
+      <h2 class="panel-title">设计参数</h2>
+      <div class="field">
+        <label for="fcuK">强度等级</label>
+        <select id="fcuK">
+          <option>C15</option><option>C20</option><option selected>C25</option>
+          <option>C30</option><option>C35</option><option>C40</option>
+          <option>C45</option><option>C50</option><option>C55</option>
+        </select>
+        <p class="hint" id="sigmaHint">自动匹配 σ = 5.0 MPa</p>
+      </div>
+      <div class="field">
+        <label for="slump">坍落度 <span class="unit">mm</span></label>
+        <input type="number" id="slump" value="50" min="10" max="180" step="5">
+      </div>
+      <div class="field">
+        <label for="envClass">环境类别</label>
+        <select id="envClass">
+          <option>一a</option><option>一b</option><option selected>二a</option>
+          <option>二b</option><option>三a</option><option>三b</option>
+        </select>
+        <p class="hint" id="envHint"></p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel-title">材料参数</h2>
+      <div class="field">
+        <label for="cementGrade">水泥强度等级</label>
+        <select id="cementGrade">
+          <option value="32.5" selected>32.5</option>
+          <option value="42.5">42.5</option>
+          <option value="52.5">52.5</option>
+        </select>
+        <p class="hint" id="gammaHint">自动匹配 γc = 1.12</p>
+      </div>
+      <div class="field">
+        <label for="fce">水泥实测强度 f<sub>ce</sub> <span class="unit">MPa</span></label>
+        <input type="number" id="fce" value="32.5" step="0.5">
+      </div>
+      <div class="field">
+        <label for="aggType">粗骨料类型</label>
+        <select id="aggType">
+          <option value="gravel" selected>卵石</option>
+          <option value="crushed_stone">碎石</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="dmax">最大粒径 D<sub>max</sub> <span class="unit">mm</span></label>
+        <select id="dmax">
+          <option value="16">16</option>
+          <option value="20" selected>20</option>
+          <option value="31.5">31.5</option>
+          <option value="40">40</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="density">表观密度 <span class="unit">kg/m³</span></label>
+        <input type="number" id="density" value="2380" step="10">
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel-title">施工含水率</h2>
+      <div class="field-row">
+        <div class="field">
+          <label for="sandMoist">砂 <span class="unit">%</span></label>
+          <input type="number" id="sandMoist" value="3.0" step="0.1">
+        </div>
+        <div class="field">
+          <label for="gravelMoist">石 <span class="unit">%</span></label>
+          <input type="number" id="gravelMoist" value="1.0" step="0.1">
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel-title">Monte Carlo 设置</h2>
+      <div class="field">
+        <label>扰动模式</label>
+        <div class="segmented" id="mcMode">
+          <button type="button" class="seg active" data-val="normal">精确模式（正态）</button>
+          <button type="button" class="seg" data-val="degrade">降级模式（±10%）</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="targetP">目标达标概率 <b id="targetPVal">95%</b></label>
+        <input type="range" id="targetP" min="80" max="99" value="95" step="1">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="fceStd">f<sub>ce</sub> σ <span class="unit">MPa</span></label>
+          <input type="number" id="fceStd" value="1.5" step="0.1" min="0">
+        </div>
+        <div class="field">
+          <label for="wbStd">W/B σ</label>
+          <input type="number" id="wbStd" value="0.01" step="0.002" min="0">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="gcStd">γc σ</label>
+          <input type="number" id="gcStd" value="0.01" step="0.005" min="0">
+        </div>
+        <div class="field">
+          <label for="aaStd">αa σ</label>
+          <input type="number" id="aaStd" value="0.02" step="0.005" min="0">
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel-title">单价与排放因子</h2>
+      <p class="hint" style="margin-bottom:10px">材料单价（元/t）与碳排放因子（kgCO₂/kg），可自行修改。</p>
+      <div class="field-row">
+        <div class="field"><label>水泥 元/t</label><input type="number" data-price="cement" value="450" step="10"></div>
+        <div class="field"><label>粉煤灰 元/t</label><input type="number" data-price="fly_ash" value="200" step="10"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>矿渣粉 元/t</label><input type="number" data-price="slag" value="250" step="10"></div>
+        <div class="field"><label>砂 元/t</label><input type="number" data-price="sand" value="120" step="5"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>石 元/t</label><input type="number" data-price="gravel" value="130" step="5"></div>
+        <div class="field"><label>水 元/t</label><input type="number" data-price="water" value="5" step="1"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>水泥 kgCO₂/kg</label><input type="number" data-co2="cement" value="0.83" step="0.01"></div>
+        <div class="field"><label>掺合料 kgCO₂/kg</label><input type="number" data-co2="fly_ash" value="0.10" step="0.01"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ 主内容 ============ -->
+  <div class="content">
+
+    <!-- 顶部告警位 -->
+    <div id="alertBox"></div>
+
+    <!-- 结果 1：KPI -->
+    <section id="result">
+      <div class="kpi-grid">
+        <div class="kpi"><span class="kpi-label">设计强度 f<sub>cu,k</sub></span><span class="kpi-value" id="k1">—</span><span class="kpi-note">MPa</span></div>
+        <div class="kpi"><span class="kpi-label">配制强度 f<sub>cu,0</sub></span><span class="kpi-value" id="k2">—</span><span class="kpi-note" id="k2n">f<sub>cu,k</sub>+1.645σ</span></div>
+        <div class="kpi accent"><span class="kpi-label">水胶比 W/B</span><span class="kpi-value" id="k3">—</span><span class="kpi-note" id="k3n"></span></div>
+        <div class="kpi"><span class="kpi-label">砂率 β<sub>s</sub></span><span class="kpi-value" id="k4">—</span><span class="kpi-note">质量砂率</span></div>
+        <div class="kpi"><span class="kpi-label">28d 预测强度</span><span class="kpi-value" id="k5">—</span><span class="kpi-note">MPa</span></div>
+      </div>
+    </section>
+
+    <!-- 结果 2：配合比 + 方案对比 -->
+    <section class="two-col">
+      <div class="card">
+        <h3>配合比汇总 <span class="tag">kg/m³</span></h3>
+        <table class="data-table" id="mixTable">
+          <thead><tr><th>材料</th><th class="num">实验室</th><th class="num">施工</th><th class="num">比例</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="mini-stats">
+          <div><span>成本</span><b id="costVal">—</b></div>
+          <div><span>碳排放</span><b id="co2Val">—</b></div>
+          <div><span>容重校核</span><b id="densVal">—</b></div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>成本 – 碳排放多方案对比</h3>
+        <p class="card-sub">胶凝材料等量替换，骨料与水不变</p>
+        <div id="planChart" class="chart-box"></div>
+        <div id="planTable"></div>
+      </div>
+    </section>
+
+    <!-- 结果 3：级配曲线 -->
+    <section id="grade" class="card">
+      <h3>合成级配曲线 <span class="tag">可拖动砂率</span></h3>
+      <div class="two-col inner">
+        <div>
+          <div class="field">
+            <label for="srSlider">砂率 β<sub>s</sub> <b id="srVal">—</b></label>
+            <input type="range" id="srSlider" min="0.15" max="0.50" step="0.01" value="0.32">
+          </div>
+          <div class="mini-stats three">
+            <div><span>细度模数 FM</span><b id="fmVal">—</b></div>
+            <div><span>砂的类别</span><b id="fmType">—</b></div>
+            <div><span>级配诊断</span><b id="gradeMsg">—</b></div>
+          </div>
+          <details class="grade-editor">
+            <summary>手动编辑累计通过率 (%)</summary>
+            <div class="grade-grid" id="gradeEditor"></div>
+            <button type="button" class="btn-ghost" id="resetGrade">恢复默认级配</button>
+          </details>
+        </div>
+        <div>
+          <div id="gradeChart" class="chart-box"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 结果 4：可行域 + 敏感性 -->
+    <section id="feasible" class="two-col">
+      <div class="card">
+        <h3>参数可行域热力图</h3>
+        <p class="card-sub">每格数字 = 该 (W/B, βs) 组合满足的约束条数（共 6 条）</p>
+        <div id="heatChart" class="chart-box tall"></div>
+        <div class="chips" id="constraintChips"></div>
+      </div>
+      <div class="card">
+        <h3>敏感性龙卷风图</h3>
+        <p class="card-sub" id="tornadoSub"></p>
+        <div class="segmented small" id="tornadoMode">
+          <button type="button" class="seg active" data-val="wb">W/B 水胶比</button>
+          <button type="button" class="seg" data-val="cost">成本 元/m³</button>
+        </div>
+        <div id="tornadoChart" class="chart-box tall"></div>
+      </div>
+    </section>
+
+    <!-- 结果 5：蒙特卡洛 -->
+    <section id="risk">
+      <div class="card">
+        <h3>Monte Carlo 风险分析 <span class="tag">10000 次采样</span></h3>
+        <p class="card-sub" id="mcSub"></p>
+        <div class="mini-stats four">
+          <div><span>达标概率 P</span><b id="pPass">—</b></div>
+          <div><span>强度均值 μ</span><b id="muVal">—</b></div>
+          <div><span>强度标准差 σ</span><b id="sdVal">—</b></div>
+          <div><span>风险判断</span><b id="riskVal">—</b></div>
+        </div>
+        <div class="two-col inner">
+          <div><div id="histChart" class="chart-box"></div></div>
+          <div><div id="contribChart" class="chart-box"></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>反算：达标概率 ≥ <span id="targetPShow">95%</span> 的最经济方案</h3>
+        <div class="mini-stats four">
+          <div><span>W/B</span><b id="bc1">—</b></div>
+          <div><span>胶材用量</span><b id="bc2">—</b></div>
+          <div><span>成本</span><b id="bc3">—</b></div>
+          <div><span>达标概率</span><b id="bc4">—</b></div>
+        </div>
+        <div id="backTable"></div>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <p>所有结果随左侧参数实时更新 · 计算依据 JGJ55-2011《普通混凝土配合比设计规程》</p>
+      <p class="tiny">本工具为工程辅助计算，正式设计须结合原材料检测报告与试配试验校核。</p>
+    </footer>
+  </div>
+</main>
+
+<script src="js/core.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
